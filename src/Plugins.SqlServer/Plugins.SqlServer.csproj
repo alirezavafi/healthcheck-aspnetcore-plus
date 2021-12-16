@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <AssemblyName>HealthCheck.AspNetCore.Plus.Plugins.SqlServer</AssemblyName>
+        <RootNamespace>HealthCheck.AspNetCore.Plus.Plugins.SqlServer</RootNamespace>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>Simple but powerfull wrapper around health check libraries </Title>
+        <Authors>Alireza Vafi</Authors>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Core\Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="5.0.3" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,83 @@
+{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.File",
+      "Serilog.Sinks.Splunk.Durable"
+    ],
+    "DefaultLogLocation" : "App_Data/Logs/Serilog",
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "theme": "Serilog.Sinks.SystemConsole.Themes.SystemConsoleTheme::Literate, Serilog.Sinks.Console",
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message}{NewLine}{Properties}{NewLine}{Exception}{NewLine}",
+          "restrictedToMinimumLevel": "Warning"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "App_Data/Logs/all-.json",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 10,
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message}{NewLine}{Properties}{NewLine}{Exception}{NewLine}",
+          "fileSizeLimitBytes": 104857600,
+          "rollOnFileSizeLimit": true
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "App_Data/Logs/err-.log",
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message}{NewLine}{Properties}{NewLine}{Exception}{NewLine}",
+          "rollingInterval": "Day",
+          "restrictedToMinimumLevel": "Warning",
+          "retainedFileCountLimit": 30
+        }
+      },
+//      {
+//        "Name": "SplunkEventCollector",
+//        "Args": {
+//          "splunkHost": "http://10.39.95.83:8001",
+//          "eventCollectorToken": "72164a78-53b0-4c82-88ee-b70d807cd851",
+//          "bufferFileFullName": "App_Data/Logs/Splunk/default-buffer.txt"
+//        }
+//      }
+    ],
+    "Enrich": [
+      "FromLogContext"
+    ],
+    "Destructure": [
+      {
+        "Name": "ToMaximumDepth",
+        "Args": {
+          "maximumDestructuringDepth": 4
+        }
+      },
+      {
+        "Name": "ToMaximumStringLength",
+        "Args": {
+          "maximumStringLength": 100000
+        }
+      },
+      {
+        "Name": "ToMaximumCollectionCount",
+        "Args": {
+          "maximumCollectionCount": 100
+        }
+      }
+    ],
+    "Properties": {
+      "Application": "Healthz",
+      "Environment" : "Development"
+    }
+  }
+}

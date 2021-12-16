@@ -1,0 +1,79 @@
+{
+  "HealthChecks": [
+    {
+      "Type": "TCP",
+      "Host": "192.168.2.8",
+      "Port": "8080",
+      "Name": "BAIL",
+      "Tags": [ "Worker" ]
+    },
+    {
+      "Type": "Redis",
+      "ConnectionString": "192.168.2.38",
+      "Name": "redis", 
+      "Tags": ["Worker"]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.35.86",
+      "Port": "8080",
+      "Name": "Nginx",
+      "Tags": [ "API-Gateway" ]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.35.86",
+      "Port": "5003",
+      "Name": "Payment-API",
+      "Tags": [ "API-Gateway" ]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.35.86",
+      "Port": "6001",
+      "Name": "Identity-API",
+      "Tags": [ "API-Gateway" ]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.13.115",
+      "Port": "8080",
+      "Name": "Splunk-Web",
+      "Tags": [ "Log" ]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.13.115",
+      "Port": "8088",
+      "Name": "Splunk-Collector",
+      "Tags": [ "Log" ]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.13.115",
+      "Port": "8089",
+      "Name": "Splunk-Management",
+      "Tags": [ "Log" ]
+    },
+    {
+      "Type": "MySql",
+      "ConnectionString": "Server=localhost;Database=db;Uid=root;Pwd='1234'",
+      "Name": "MySql",
+      "Tags": ["Database"]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.3.12",
+      "Port": "9092",
+      "Name": "Kafka",
+      "Tags": ["Kafka"]
+    },
+    {
+      "Type": "TCP",
+      "Host": "192.168.3.12",
+      "Port": "9092",
+      "Name": "ZooKeeper",
+      "Tags": ["Kafka"]
+    }
+  ]
+}
