@@ -6,7 +6,7 @@ namespace HealthCheck.Plus.Plugins.MySql
     {
         public static AppHealthCheckBuilderOptions AddOraclePlugin(this AppHealthCheckBuilderOptions options)
         {
-            options.AddHealthCheckItemDiscriminator<OracleHealthCheckItem>("Oracle");
+            options.AddJsonDiscriminator<OracleHealthCheckItem>("Oracle");
             return options; 
         }
     }

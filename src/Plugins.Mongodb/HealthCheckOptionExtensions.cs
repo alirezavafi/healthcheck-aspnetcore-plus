@@ -4,7 +4,7 @@ namespace HealthCheck.AspNetCore.Plus.Plugins.Mongodb
     {
         public static AppHealthCheckBuilderOptions AddMongodbPlugin(this AppHealthCheckBuilderOptions options)
         {
-            options.AddHealthCheckItemDiscriminator<MongodbHealthCheckItem>("Mongodb");
+            options.AddJsonDiscriminator<MongodbHealthCheckItem>("Mongodb");
             return options; 
         }
     }

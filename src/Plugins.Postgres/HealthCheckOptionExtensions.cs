@@ -4,7 +4,7 @@ namespace HealthCheck.AspNetCore.Plus.Plugins.Postgres
     {
         public static AppHealthCheckBuilderOptions AddPostgresPlugin(this AppHealthCheckBuilderOptions options)
         {
-            options.AddHealthCheckItemDiscriminator<PostgresHealthCheckItem>("Postgres");
+            options.AddJsonDiscriminator<PostgresHealthCheckItem>("Postgres");
             return options; 
         }
     }

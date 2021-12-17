@@ -9,6 +9,7 @@ namespace HealthCheck.AspNetCore.Plus.Samples.Web
 {
     public class Startup
     {
+        private AppHealthCheckOptions _appHealthCheckOptions;
         public IConfiguration Configuration { get; }
 
         public Startup(IConfiguration configuration)
@@ -18,7 +19,8 @@ namespace HealthCheck.AspNetCore.Plus.Samples.Web
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAppHealthCheck()
+            _appHealthCheckOptions = services.AddAppHealthCheck()
+                .AddFileDataSource(o => o.SetFileName("healthz.json"))
                 .AddMySqlPlugin()
                 .SetAppHealthCheckConfiguration((s, o) => o.SetEvaluationTimeInSeconds(1))
                 .CustomizeHealthCheckUiSettings(p => p.AddInMemoryStorage()) ////healthChecks.UiBuilder.AddMySqlStorage("connectionString")
@@ -36,7 +38,7 @@ namespace HealthCheck.AspNetCore.Plus.Samples.Web
             }
 
             app.UseRouting();
-            app.UseEndpoints(config => { config.MapAppHealthChecksEndpoints(); });
+            app.UseEndpoints(config => { config.MapAppHealthChecksEndpoints(_appHealthCheckOptions); });
         }
     }
 }

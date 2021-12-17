@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HealthCheck.AspNetCore.Plus.DataSources;
 using HealthCheck.AspNetCore.Plus.Models;
 using HealthCheck.AspNetCore.Plus.Models.HealthCheckItems;
 using HealthChecks.UI.Client;
@@ -9,16 +10,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 
 namespace HealthCheck.AspNetCore.Plus
 {
-    public class AppHealthCheckBuilderOptions
-    {
-        internal AppHealthCheckOptions Options { get; set; }
-        internal IServiceCollection Services { get; set; }
-    }
-    
     public static class AppHealthCheckOptionBuilder
     {
         public static AppHealthCheckBuilderOptions AddAppHealthCheck(this IServiceCollection services)
@@ -51,23 +47,78 @@ namespace HealthCheck.AspNetCore.Plus
 
         public static AppHealthCheckBuilderOptions CreateUIPerTag(this AppHealthCheckBuilderOptions builder)
         {
+            builder.Options.AddUi = true;
             builder.Options.AddHealthCheckUIPerHealthCheckTag = true;
             return builder;
         }
 
         public static AppHealthCheckBuilderOptions CreateUIPerName(this AppHealthCheckBuilderOptions builder)
         {
+            builder.Options.AddUi = true;
             builder.Options.AddHealthCheckUIPerHealthCheckName = true;
             return builder;
         }
-        
-        public static AppHealthCheckBuilderOptions SetFileName(this AppHealthCheckBuilderOptions builder, string fileName)
+
+        public static AppHealthCheckBuilderOptions AddFileDataSource(this AppHealthCheckBuilderOptions builder, Action<FileAppHealthCheckDataSource> configure)
         {
-            builder.Options.HealthCheckSettingsFile = fileName;
+            var fileAppHealthCheckDataSource = new FileAppHealthCheckDataSource();
+            builder.Options.DataSources.Add(fileAppHealthCheckDataSource);
+            configure(fileAppHealthCheckDataSource);
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions SetAppHealthCheckConfiguration(this AppHealthCheckBuilderOptions builder, Action<AppHealthCheckConfiuration, HealthChecks.UI.Configuration.Settings> action)
+        public static AppHealthCheckBuilderOptions AddJsonDiscriminator<T>(this AppHealthCheckBuilderOptions builder, string discriminator) where T : HealthCheckItem
+        {
+            var fileDataSource = builder.Options.DataSources.OfType<FileAppHealthCheckDataSource>().FirstOrDefault();
+            if (fileDataSource == null)
+                throw new InvalidOperationException("file dataSource must be set before calling this method");
+            
+            fileDataSource.AddHealthCheckItemDiscriminator<T>(discriminator);
+            return builder;
+        }
+
+        public static AppHealthCheckBuilderOptions AddCustomCheck(this AppHealthCheckBuilderOptions builder, string name, Func<HealthCheckContext, HealthCheckResult> customFunction, string groupName = "Default", HealthStatus? failureStatus = null, string[] tags = null, TimeSpan? timeout = null)
+        {
+            if (customFunction == null)
+                throw new ArgumentNullException(nameof(customFunction));
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentNullException(nameof(name));
+
+            var c = new CustomCodeHealthCheckItem()
+            {
+                Group = groupName, Name = name,
+                FailureStatus = failureStatus ?? HealthStatus.Unhealthy,
+                Timeout = timeout,
+                Tags = tags,
+                HealthCheckFunction = customFunction
+            };
+            builder.Options.DataSources.Add(new CustomCodeDataSource(c));
+            return builder;
+        }
+
+        
+        public static AppHealthCheckBuilderOptions AddCheck<T>(this AppHealthCheckBuilderOptions builder, T healthCheckItem) where T : HealthCheckItem
+        {
+            if (healthCheckItem == null)
+                throw new ArgumentNullException(nameof(healthCheckItem));
+            
+            builder.Options.DataSources.Add(new HealthCheckItemDataSource<T>(healthCheckItem));
+            return builder;
+        }
+
+        public static AppHealthCheckBuilderOptions SetBasePath(this AppHealthCheckBuilderOptions builder, string basePath)
+        {
+            builder.Options.BasePath = basePath;
+            return builder;
+        }
+
+        public static AppHealthCheckBuilderOptions AddHealthCheckUi(this AppHealthCheckBuilderOptions builder)
+        {
+            builder.Options.AddUi = true;
+            return builder;
+        }
+
+        public static AppHealthCheckBuilderOptions SetAppHealthCheckConfiguration(this AppHealthCheckBuilderOptions builder, Action<List<HealthCheckItem>, HealthChecks.UI.Configuration.Settings> action)
         {
             builder.Options.HealthCheckUiBuildOptions = action;
             return builder;
@@ -79,148 +130,94 @@ namespace HealthCheck.AspNetCore.Plus
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions AddHealthCheckItemDiscriminator<T>(this AppHealthCheckBuilderOptions builder, string discriminator)
-            where T : HealthCheckItem
+        public static AppHealthCheckOptions Build(this AppHealthCheckBuilderOptions builder)
         {
-            builder.Options.AddHealthCheckItemDiscriminator<T>(discriminator);
-            return builder;
-        }
-
-
-        public static void Build(this AppHealthCheckBuilderOptions builder)
-        {
-            var healthCheckConfiguration = builder.Services.ConfigureAndGetHealthCheckConfiguration(builder.Options);
-            builder.Services.AddSingleton(builder);
-            var healthCheckUiBuilder = builder.Services
-                .AddHealthChecksUI(setupSettings: setup =>
-                {
-               
-                    //Configures the UI to poll for healthchecks updates every 5 seconds, default is every 10 seconds
-                    //setup.SetEvaluationTimeInSeconds(5); 
-
-                    //Only one active request will be executed at a time.
-                    //All the excedent requests will result in 429 (Too many requests)
-                    //setup.SetApiMaxActiveRequests(1);
-
-                    // Set the maximum history entries by endpoint that will be served by the UI api middleware
-                    //setup.MaximumHistoryEntriesPerEndpoint(50);
-                    if (healthCheckConfiguration.Categories.Any())
-                    {
-                        foreach (var category in healthCheckConfiguration.Categories)
-                        {
-                            foreach (var item in category.Value)
-                                setup.AddHealthCheckEndpoint(item.Name, $"/healthz/{category.Key}/{item.Name}");
-                        }
-                    }
-                    
-                    if (builder.Options.AddHealthCheckUIPerHealthCheckName)
-                    {
-                        foreach (var item in healthCheckConfiguration.HealthChecks)
-                            setup.AddHealthCheckEndpoint(item.Name, $"/healthz/internals/{item.Name}");
-                    }
-
-                    if (builder.Options.AddHealthCheckUIPerHealthCheckTag)
-                    {
-                        var tags = healthCheckConfiguration.HealthChecks.SelectMany(x => x.Tags).Distinct();
-                        foreach (var tag in tags)
-                            setup.AddHealthCheckEndpoint(tag, $"/healthz/components/{tag}");
-                    }
-
-                    builder.Options.HealthCheckUiBuildOptions?.Invoke(healthCheckConfiguration, setup);
-                });
-            builder.Options.CustomizeHealthCheckUi?.Invoke(healthCheckUiBuilder);
-            builder.Services.AddHealthChecks(healthCheckConfiguration);
-        }
-        
-        private static AppHealthCheckConfiuration ConfigureAndGetHealthCheckConfiguration(this IServiceCollection services, AppHealthCheckOptions options)
-        {
-            services.AddSingleton(options);
-            var json = System.IO.File.ReadAllText(options.HealthCheckSettingsFile);
-            var serializerSettings = new JsonSerializerSettings();
-            var jsonSubtypesConverterBuilder = JsonSubtypesConverterBuilder
-                .Of(typeof(HealthCheckItem), "Type")
-                .SerializeDiscriminatorProperty()
-                .RegisterSubtype(typeof(DnsResolutionHealthCheckItem), "DNS")
-                .RegisterSubtype(typeof(FtpHealthCheckItem), "FTP")
-                .RegisterSubtype(typeof(IdentityServerHealthCheckItem), "IdentityServer")
-                .RegisterSubtype(typeof(KafkaHealthCheckItem), "Kafka")
-                .RegisterSubtype(typeof(PingHealthCheckItem), "Ping")
-                .RegisterSubtype(typeof(RedisHealthCheckItem), "Redis")
-                .RegisterSubtype(typeof(HangfireHealthCheckItem), "Hangfire")
-                .RegisterSubtype(typeof(SftpHealthCheckItem), "SFTP")
-                .RegisterSubtype(typeof(SmtpHealthCheckItem), "SMTP")
-                .RegisterSubtype(typeof(SslCertificateHealthCheckItem), "SSL")
-                .RegisterSubtype(typeof(TcpHealthCheckItem), "TCP")
-                .RegisterSubtype(typeof(HttpHealthCheckItem), "HTTP")
-                .RegisterSubtype(typeof(ProcessMemoryHealthCheckItem), "ProcessMemory")
-                .RegisterSubtype(typeof(SystemDiskHealthCheckItem), "SystemDisk")
-                .RegisterSubtype(typeof(SystemMemoryHealthCheckItem), "SystemMemory")
-                .RegisterSubtype(typeof(SystemProcessHealthCheckItem), "SystemProcess");
-            foreach (var typeDiscriminator in options.GetHealthCheckItemDiscriminators())
+            var options = builder.Options;
+            var healthCheckItems = options.DataSources.SelectMany(x => x.Retrieve()).ToList();
+            if (options.AddUi)
             {
-                jsonSubtypesConverterBuilder.RegisterSubtype(typeDiscriminator.Key, typeDiscriminator.Value);
-            }
-            serializerSettings.Converters.Add(jsonSubtypesConverterBuilder.Build());
+                var healthCheckUiBuilder = builder.Services
+                    .AddHealthChecksUI(setupSettings: setup =>
+                    {
+               
+                        //Configures the UI to poll for healthchecks updates every 5 seconds, default is every 10 seconds
+                        //setup.SetEvaluationTimeInSeconds(5); 
 
-            var settings = JsonConvert.DeserializeObject<AppHealthCheckConfiuration>(json, serializerSettings);
-            services.AddSingleton(settings);
-            return settings;
+                        //Only one active request will be executed at a time.
+                        //All the excedent requests will result in 429 (Too many requests)
+                        //setup.SetApiMaxActiveRequests(1);
+
+                        // Set the maximum history entries by endpoint that will be served by the UI api middleware
+                        //setup.MaximumHistoryEntriesPerEndpoint(50);
+                    
+                        foreach (var group in healthCheckItems.Select(x => x.Group).Distinct())
+                        {
+                            setup.AddHealthCheckEndpoint(group, $"{options.BasePath}/{group}");
+                        }
+                    
+                        if (builder.Options.AddHealthCheckUIPerHealthCheckName)
+                        {
+                            foreach (var item in healthCheckItems)
+                                setup.AddHealthCheckEndpoint(item.Name, $"{options.BasePath}/_internals/{item.Name}");
+                        }
+
+                        if (builder.Options.AddHealthCheckUIPerHealthCheckTag)
+                        {
+                            var tags = healthCheckItems.SelectMany(x => x.Tags).Distinct();
+                            foreach (var tag in tags)
+                                setup.AddHealthCheckEndpoint(tag, $"{options.BasePath}/{tag}");
+                        }
+
+                        builder.Options.HealthCheckUiBuildOptions?.Invoke(healthCheckItems, setup);
+                    });
+                builder.Options.CustomizeHealthCheckUi?.Invoke(healthCheckUiBuilder);
+            }
+            builder.Services.AddHealthChecks(options);
+            
+            return builder.Options;
         }
         
-        private static IHealthChecksBuilder AddHealthChecks(this IServiceCollection services, AppHealthCheckConfiuration confiuration)
+        private static IHealthChecksBuilder AddHealthChecks(this IServiceCollection services, AppHealthCheckOptions options)
         {
             var healthChecksBuilder = services.AddHealthChecks();
-            foreach (var healthCheckItem in confiuration.HealthChecks)
-            {
-                try
-                {
-                    healthCheckItem.BuildHealthCheck(healthChecksBuilder);
-                }
-                catch (Exception e)
-                {
-                    Serilog.Log.Error(e,"Cannot initialize {@HealthCheck} due to initialization error", healthCheckItem);
-                }
-            }
+            var healthCheckItems = options.DataSources.SelectMany(x => x.Retrieve()).ToList();
             
-            if (confiuration.Categories.Any())
+            foreach (var itemsByGroup in healthCheckItems.GroupBy(x => x.Name))
             {
-                foreach (var category in confiuration.Categories)
+                foreach (var item in itemsByGroup)
                 {
-                    foreach (var item in category.Value)
+                    try
                     {
-                        try
-                        {
-                            var itemTags = new List<string>(item.Tags);
-                            itemTags.Add(category.Key);
-                            item.Tags = itemTags;
-                            item.BuildHealthCheck(healthChecksBuilder);
-                        }
-                        catch (Exception e)
-                        {
-                            Serilog.Log.Error(e,"Cannot initialize {@HealthCheck} due to initialization error", item);
-                        }
+                        var itemTags = new List<string>(item.Tags);
+                        itemTags.Add(itemsByGroup.Key);
+                        item.Tags = itemTags;
+                        item.BuildHealthCheck(healthChecksBuilder);
+                    }
+                    catch (Exception e)
+                    {
+                        Serilog.Log.Error(e,"Cannot initialize {@HealthCheck} due to initialization error", item);
                     }
                 }
             }
-
 
             return healthChecksBuilder;
         }
 
-        public static void MapAppHealthChecksEndpoints(this IEndpointRouteBuilder config)
+        public static void MapAppHealthChecksEndpoints(this IEndpointRouteBuilder config,
+            AppHealthCheckOptions options)
         {
-            config.MapHealthChecks("/healthz", new HealthCheckOptions
+            config.MapHealthChecks($"{options.BasePath}", new HealthCheckOptions
             {
                 Predicate = _ => true,
                 ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
             });
-            var appHealthCheckConfiuration =  config.ServiceProvider.GetRequiredService<AppHealthCheckConfiuration>();
-            var options =  config.ServiceProvider.GetRequiredService<AppHealthCheckOptions>();
+            var healthCheckItems = options.DataSources.SelectMany(x => x.Retrieve()).ToList();
+
             if (options.AddHealthCheckEndpointPerHealthCheckName)
             {
-                foreach (var item in appHealthCheckConfiuration.HealthChecks)
+                foreach (var item in healthCheckItems)
                 {
-                    config.MapHealthChecks($"/healthz/internals/{item.Name}", new HealthCheckOptions
+                    config.MapHealthChecks($"{options.BasePath}/_internals/{item.Name}", new HealthCheckOptions
                     {
                         Predicate = _ => _.Name == item.Name,
                         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
@@ -230,10 +227,10 @@ namespace HealthCheck.AspNetCore.Plus
 
             if (options.AddHealthCheckEndpointPerHealthCheckTag)
             {
-                var tags = appHealthCheckConfiuration.HealthChecks.SelectMany(x => x.Tags).Distinct();
+                var tags = healthCheckItems.SelectMany(x => x.Tags).Distinct();
                 foreach (var tag in tags)
                 {
-                    config.MapHealthChecks($"/healthz/components/{tag}", new HealthCheckOptions
+                    config.MapHealthChecks($"{options.BasePath}/{tag}", new HealthCheckOptions
                     {
                         Predicate = _ => _.Tags.Contains(tag),
                         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
@@ -241,21 +238,24 @@ namespace HealthCheck.AspNetCore.Plus
                 }
             }
 
-            var categories = appHealthCheckConfiuration.Categories;
-            foreach (var category in categories)
+            var groups = healthCheckItems.GroupBy(x => x.Group);
+            foreach (var groupItem in groups)
             {
-                config.MapHealthChecks($"/healthz/{category.Key}", new HealthCheckOptions
+                config.MapHealthChecks($"{options.BasePath}/{groupItem.Key}", new HealthCheckOptions
                 {
-                    Predicate = _ => _.Tags.Contains(category.Key),
+                    Predicate = _ => _.Tags.Contains(groupItem.Key),
                     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                 });
             }
 
-            config.MapHealthChecksUI(setup =>
+            if (options.AddUi)
             {
-                //Customize Health check ui using custom css
-                //setup.AddCustomStylesheet("dotnet.css");
-            });
+                config.MapHealthChecksUI(setup =>
+                {
+                    //Customize Health check ui using custom css
+                    //setup.AddCustomStylesheet("dotnet.css");
+                });
+            }
         }
 
     }

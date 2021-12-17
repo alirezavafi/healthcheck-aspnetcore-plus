@@ -4,7 +4,7 @@ namespace HealthCheck.AspNetCore.Plus.Plugins.MySql
     {
         public static AppHealthCheckBuilderOptions AddMySqlPlugin(this AppHealthCheckBuilderOptions options)
         {
-            options.AddHealthCheckItemDiscriminator<MySqlHealthCheckItem>("MySql");
+            options.AddJsonDiscriminator<MySqlHealthCheckItem>("MySql");
             return options; 
         }
     }
