@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using HealthCheck.AspNetCore.Plus.DataSources;
 using HealthCheck.AspNetCore.Plus.Models;
 using HealthCheck.AspNetCore.Plus.Models.HealthCheckItems;
 using HealthChecks.UI.Client;
+using HealthChecks.UI.Configuration;
 using JsonSubTypes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -17,16 +20,16 @@ namespace HealthCheck.AspNetCore.Plus
 {
     public static class AppHealthCheckOptionBuilder
     {
-        public static AppHealthCheckBuilderOptions AddAppHealthCheck(this IServiceCollection services)
+        public static AppHealthCheckBuilderOptions AddHealthCheckPlus(this IServiceCollection services)
         {
             return new AppHealthCheckBuilderOptions()
             {
                 Options = new AppHealthCheckOptions()
                 {
-                    AddHealthCheckEndpointPerHealthCheckName = false,
-                    AddHealthCheckEndpointPerHealthCheckTag = false,
-                    AddHealthCheckUIPerHealthCheckName = false,
-                    AddHealthCheckUIPerHealthCheckTag = false,
+                    AddHealthEndpointPerHealthCheckItem = false,
+                    AddHealthEndpointPerHealthCheckTag = false,
+                    AddUIPerHealthCheckItem = false,
+                    AddUIPerHealthCheckTag = false,
                     Services = services,
                 },
                 Services = services
@@ -35,27 +38,27 @@ namespace HealthCheck.AspNetCore.Plus
         
         public static AppHealthCheckBuilderOptions CreateHealthEndpointPerTag(this AppHealthCheckBuilderOptions builder)
         {
-            builder.Options.AddHealthCheckEndpointPerHealthCheckTag = true;
+            builder.Options.AddHealthEndpointPerHealthCheckTag = true;
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions CreateHealthEndpointPerName(this AppHealthCheckBuilderOptions builder)
+        public static AppHealthCheckBuilderOptions CreateHealthEndpointPerHealthCheckItem(this AppHealthCheckBuilderOptions builder)
         {
-            builder.Options.AddHealthCheckEndpointPerHealthCheckName = true;
+            builder.Options.AddHealthEndpointPerHealthCheckItem = true;
             return builder;
         }
 
         public static AppHealthCheckBuilderOptions CreateUIPerTag(this AppHealthCheckBuilderOptions builder)
         {
             builder.Options.AddUi = true;
-            builder.Options.AddHealthCheckUIPerHealthCheckTag = true;
+            builder.Options.AddUIPerHealthCheckTag = true;
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions CreateUIPerName(this AppHealthCheckBuilderOptions builder)
+        public static AppHealthCheckBuilderOptions CreateUIPerHealthCheckItem(this AppHealthCheckBuilderOptions builder)
         {
             builder.Options.AddUi = true;
-            builder.Options.AddHealthCheckUIPerHealthCheckName = true;
+            builder.Options.AddUIPerHealthCheckItem = true;
             return builder;
         }
 
@@ -77,7 +80,7 @@ namespace HealthCheck.AspNetCore.Plus
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions AddCustomCheck(this AppHealthCheckBuilderOptions builder, string name, Func<HealthCheckContext, HealthCheckResult> customFunction, string groupName = "Default", HealthStatus? failureStatus = null, string[] tags = null, TimeSpan? timeout = null)
+        public static AppHealthCheckBuilderOptions AddInlineCodeDataSource(this AppHealthCheckBuilderOptions builder, string name, Func<HealthCheckContext, HealthCheckResult> customFunction, string groupName = "Default", HealthStatus? failureStatus = null, string[] tags = null, TimeSpan? timeout = null)
         {
             if (customFunction == null)
                 throw new ArgumentNullException(nameof(customFunction));
@@ -97,7 +100,7 @@ namespace HealthCheck.AspNetCore.Plus
         }
 
         
-        public static AppHealthCheckBuilderOptions AddCheck<T>(this AppHealthCheckBuilderOptions builder, T healthCheckItem) where T : HealthCheckItem
+        public static AppHealthCheckBuilderOptions AddHealthCheckItemDataSource<T>(this AppHealthCheckBuilderOptions builder, T healthCheckItem) where T : HealthCheckItem
         {
             if (healthCheckItem == null)
                 throw new ArgumentNullException(nameof(healthCheckItem));
@@ -118,13 +121,13 @@ namespace HealthCheck.AspNetCore.Plus
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions SetAppHealthCheckConfiguration(this AppHealthCheckBuilderOptions builder, Action<List<HealthCheckItem>, HealthChecks.UI.Configuration.Settings> action)
+        public static AppHealthCheckBuilderOptions ConfigureHealthCheck(this AppHealthCheckBuilderOptions builder, Action<List<HealthCheckItem>, HealthChecks.UI.Configuration.Settings> action)
         {
             builder.Options.HealthCheckUiBuildOptions = action;
             return builder;
         }
 
-        public static AppHealthCheckBuilderOptions CustomizeHealthCheckUiSettings(this AppHealthCheckBuilderOptions builder, Action<HealthChecksUIBuilder> action)
+        public static AppHealthCheckBuilderOptions ConfigureHealthCheckUi(this AppHealthCheckBuilderOptions builder, Action<HealthChecksUIBuilder> action)
         {
             builder.Options.CustomizeHealthCheckUi = action;
             return builder;
@@ -155,13 +158,13 @@ namespace HealthCheck.AspNetCore.Plus
                             setup.AddHealthCheckEndpoint(group, $"{options.BasePath}/{group}");
                         }
                     
-                        if (builder.Options.AddHealthCheckUIPerHealthCheckName)
+                        if (builder.Options.AddUIPerHealthCheckItem)
                         {
                             foreach (var item in healthCheckItems)
                                 setup.AddHealthCheckEndpoint(item.Name, $"{options.BasePath}/_internals/{item.Name}");
                         }
 
-                        if (builder.Options.AddHealthCheckUIPerHealthCheckTag)
+                        if (builder.Options.AddUIPerHealthCheckTag)
                         {
                             var tags = healthCheckItems.SelectMany(x => x.Tags).Distinct();
                             foreach (var tag in tags)
@@ -173,7 +176,7 @@ namespace HealthCheck.AspNetCore.Plus
                 builder.Options.CustomizeHealthCheckUi?.Invoke(healthCheckUiBuilder);
             }
             builder.Services.AddHealthChecks(options);
-            
+            builder.Services.AddSingleton<AppHealthCheckOptions>(options);
             return builder.Options;
         }
         
@@ -204,28 +207,29 @@ namespace HealthCheck.AspNetCore.Plus
         }
 
         public static void MapAppHealthChecksEndpoints(this IEndpointRouteBuilder config,
-            AppHealthCheckOptions options)
+            Action<Options> setup = null)
         {
+            var options = config.ServiceProvider.GetService<AppHealthCheckOptions>();
             config.MapHealthChecks($"{options.BasePath}", new HealthCheckOptions
             {
                 Predicate = _ => true,
-                ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                ResponseWriter = GetResponseWriter(options)
             });
             var healthCheckItems = options.DataSources.SelectMany(x => x.Retrieve()).ToList();
 
-            if (options.AddHealthCheckEndpointPerHealthCheckName)
+            if (options.AddHealthEndpointPerHealthCheckItem)
             {
                 foreach (var item in healthCheckItems)
                 {
                     config.MapHealthChecks($"{options.BasePath}/_internals/{item.Name}", new HealthCheckOptions
                     {
                         Predicate = _ => _.Name == item.Name,
-                        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                        ResponseWriter = GetResponseWriter(options)
                     });
                 }
             }
 
-            if (options.AddHealthCheckEndpointPerHealthCheckTag)
+            if (options.AddHealthEndpointPerHealthCheckTag)
             {
                 var tags = healthCheckItems.SelectMany(x => x.Tags).Distinct();
                 foreach (var tag in tags)
@@ -233,7 +237,7 @@ namespace HealthCheck.AspNetCore.Plus
                     config.MapHealthChecks($"{options.BasePath}/{tag}", new HealthCheckOptions
                     {
                         Predicate = _ => _.Tags.Contains(tag),
-                        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                        ResponseWriter = GetResponseWriter(options)
                     });
                 }
             }
@@ -244,19 +248,22 @@ namespace HealthCheck.AspNetCore.Plus
                 config.MapHealthChecks($"{options.BasePath}/{groupItem.Key}", new HealthCheckOptions
                 {
                     Predicate = _ => _.Tags.Contains(groupItem.Key),
-                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                    ResponseWriter = GetResponseWriter(options)
                 });
             }
 
             if (options.AddUi)
             {
-                config.MapHealthChecksUI(setup =>
-                {
-                    //Customize Health check ui using custom css
-                    //setup.AddCustomStylesheet("dotnet.css");
-                });
+                config.MapHealthChecksUI(setup ?? (op => { }));
             }
         }
 
+        private static Func<HttpContext, HealthReport, Task> GetResponseWriter(AppHealthCheckOptions options)
+        {
+            if (options.AddUi)
+                return UIResponseWriter.WriteHealthCheckUIResponse;
+
+            return null;
+        }
     }
 }

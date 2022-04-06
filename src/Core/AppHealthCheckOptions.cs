@@ -15,11 +15,11 @@ namespace HealthCheck.AspNetCore.Plus
             set;
         }
 
-        public bool AddHealthCheckEndpointPerHealthCheckTag { get; set; } = true;
-        public bool AddHealthCheckEndpointPerHealthCheckName { get; set; } = false;
+        public bool AddHealthEndpointPerHealthCheckTag { get; set; } = true;
+        public bool AddHealthEndpointPerHealthCheckItem { get; set; } = false;
         public bool AddUi { get; set; } = false;
-        public bool AddHealthCheckUIPerHealthCheckTag { get; set; } = true;
-        public bool AddHealthCheckUIPerHealthCheckName { get; set; } = false;
+        public bool AddUIPerHealthCheckTag { get; set; } = true;
+        public bool AddUIPerHealthCheckItem { get; set; } = false;
         public IServiceCollection Services { get; set; }
         public Action<HealthChecksUIBuilder> CustomizeHealthCheckUi { get; set; }
         public IList<IAppHealthCheckDataSource> DataSources { get; } = new List<IAppHealthCheckDataSource>();
