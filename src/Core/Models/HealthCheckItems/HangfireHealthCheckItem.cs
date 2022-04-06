@@ -5,11 +5,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class HangfireHealthCheckItem : HealthCheckItem
     {
         public HangfireHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new List<string>() {"JobScheduler", "Service"};
         }
         
@@ -17,7 +18,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public int? MaximumFailedJobs { get; set; }
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
-        public sealed override string Type => "Hangfire";
+        public const string Type = "Hangfire";
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {
             builder.AddHangfire(o =>

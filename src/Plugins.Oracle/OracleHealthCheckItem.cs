@@ -1,15 +1,17 @@
 using System;
+using HealthCheck.AspNetCore.Plus;
 using HealthCheck.AspNetCore.Plus.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.Plus.Plugins.MySql
 {
+    [FileDataSourceDiscriminator(Type)]
     public class OracleHealthCheckItem : HealthCheckItem
     {
         public OracleHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Database"};
         }
         
@@ -18,7 +20,7 @@ namespace HealthCheck.Plus.Plugins.MySql
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
         
-        public sealed override string Type => "Oracle";
+        public const string Type = "Oracle";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

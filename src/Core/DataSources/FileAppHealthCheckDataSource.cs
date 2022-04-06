@@ -10,13 +10,12 @@ namespace HealthCheck.AspNetCore.Plus.DataSources
 {
     public class FileAppHealthCheckDataSource : IAppHealthCheckDataSource
     {
-        private readonly Dictionary<Type, string> _customTypeDiscriminators = new Dictionary<Type, string>();
-
-        public FileAppHealthCheckDataSource AddHealthCheckItemDiscriminator<T>(string discriminator) where T : HealthCheckItem
+        private readonly AppHealthCheckOptions _appHealthCheckOptions;
+        public FileAppHealthCheckDataSource(AppHealthCheckOptions appHealthCheckOptions)
         {
-            _customTypeDiscriminators.Add(typeof(T), discriminator);
-            return this;
+            _appHealthCheckOptions = appHealthCheckOptions;
         }
+
         public FileAppHealthCheckDataSource SetFileName(string fileName)
         {
             this.FileName = fileName;
@@ -28,15 +27,8 @@ namespace HealthCheck.AspNetCore.Plus.DataSources
             return this;
         }
 
-        private Dictionary<Type, string> GetHealthCheckItemDiscriminators() => _customTypeDiscriminators;
-        public string FileName { get; set; }
-        public bool IsOptional { get; set; }
-        public FileAppHealthCheckDataSource() { }
-        public FileAppHealthCheckDataSource(string fileName, bool isOptional)
-        {
-            FileName = fileName;
-            IsOptional = isOptional;
-        }
+        internal string FileName { get; private set; }
+        internal bool IsOptional { get; private set; }
 
         public List<HealthCheckItem> Retrieve()
         {
@@ -55,24 +47,8 @@ namespace HealthCheck.AspNetCore.Plus.DataSources
             var serializerSettings = new JsonSerializerSettings();
             var jsonSubtypesConverterBuilder = JsonSubtypesConverterBuilder
                 .Of(typeof(HealthCheckItem), "Type")
-                .SerializeDiscriminatorProperty()
-                .RegisterSubtype(typeof(DnsResolutionHealthCheckItem), "DNS")
-                .RegisterSubtype(typeof(FtpHealthCheckItem), "FTP")
-                .RegisterSubtype(typeof(IdentityServerHealthCheckItem), "IdentityServer")
-                .RegisterSubtype(typeof(KafkaHealthCheckItem), "Kafka")
-                .RegisterSubtype(typeof(PingHealthCheckItem), "Ping")
-                .RegisterSubtype(typeof(RedisHealthCheckItem), "Redis")
-                .RegisterSubtype(typeof(HangfireHealthCheckItem), "Hangfire")
-                .RegisterSubtype(typeof(SftpHealthCheckItem), "SFTP")
-                .RegisterSubtype(typeof(SmtpHealthCheckItem), "SMTP")
-                .RegisterSubtype(typeof(SslCertificateHealthCheckItem), "SSL")
-                .RegisterSubtype(typeof(TcpHealthCheckItem), "TCP")
-                .RegisterSubtype(typeof(HttpHealthCheckItem), "HTTP")
-                .RegisterSubtype(typeof(ProcessMemoryHealthCheckItem), "ProcessMemory")
-                .RegisterSubtype(typeof(SystemDiskHealthCheckItem), "SystemDisk")
-                .RegisterSubtype(typeof(SystemMemoryHealthCheckItem), "SystemMemory")
-                .RegisterSubtype(typeof(SystemProcessHealthCheckItem), "SystemProcess");
-            foreach (var typeDiscriminator in GetHealthCheckItemDiscriminators())
+                .SerializeDiscriminatorProperty();
+            foreach (var typeDiscriminator in _appHealthCheckOptions.FileDataSourceDiscriminators)
             {
                 jsonSubtypesConverterBuilder.RegisterSubtype(typeDiscriminator.Key, typeDiscriminator.Value);
             }

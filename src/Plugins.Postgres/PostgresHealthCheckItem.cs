@@ -5,11 +5,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Plugins.Postgres
 {
+    [FileDataSourceDiscriminator(Type)]
     public class PostgresHealthCheckItem : HealthCheckItem
     {
         public PostgresHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Database"};
         }
         
@@ -18,7 +19,7 @@ namespace HealthCheck.AspNetCore.Plus.Plugins.Postgres
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
         
-        public sealed override string Type => "Postgres";
+        public const string Type = "Postgres";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

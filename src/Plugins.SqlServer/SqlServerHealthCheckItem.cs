@@ -5,11 +5,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Plugins.SqlServer
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SqlServerHealthCheckItem : HealthCheckItem
     {
         public SqlServerHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Database"};
         }
         
@@ -18,7 +19,7 @@ namespace HealthCheck.AspNetCore.Plus.Plugins.SqlServer
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
         
-        public sealed override string Type => "SqlServer";
+        public const string Type = "SqlServer";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

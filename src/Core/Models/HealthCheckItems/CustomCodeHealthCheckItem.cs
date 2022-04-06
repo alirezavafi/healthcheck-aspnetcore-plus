@@ -6,22 +6,21 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
-    public class CustomCodeHealthCheckItem : HealthCheckItem, IHealthCheck
+    public abstract class CustomCodeHealthCheckItem : HealthCheckItem
     {
-        public CustomCodeHealthCheckItem() => this.Name = this.Type;
-        public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
+        public CustomCodeHealthCheckItem() => this.Name = Type;
         public TimeSpan? Timeout { get; set;}
-        public sealed override string Type => "CustomCode";
-        public Func<HealthCheckContext, HealthCheckResult> HealthCheckFunction { get; set; }
-        public override void BuildHealthCheck(IHealthChecksBuilder builder)
+        public const string Type = "CustomCode";
+        public sealed override void BuildHealthCheck(IHealthChecksBuilder builder)
         {
-            builder.AddCheck(Name, this, FailureStatus, Tags, Timeout);
+            builder.Add(new HealthCheckRegistration(
+                Name,
+                sp => new CustomCodeHealthCheck(sp.GetRequiredService<IServiceProvider>(), this.HealthCheckFunction),
+                null,
+                Tags, Timeout));
         }
 
-        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
-        {
-            var healthCheckFunction = this.HealthCheckFunction(context);
-            return Task.FromResult(healthCheckFunction);
-        }
+        protected abstract Task<HealthCheckResult> HealthCheckFunction(IServiceProvider serviceProvider,
+            HealthCheckContext context, CancellationToken cancellationToken);
     }
 }

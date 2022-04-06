@@ -2,9 +2,9 @@ namespace HealthCheck.AspNetCore.Plus.Plugins.SqlServer
 {
     public static class HealthCheckOptionExtensions
     {
-        public static AppHealthCheckBuilderOptions AddSqlServerPlugin(this AppHealthCheckBuilderOptions options)
+        public static AppHealthCheckBuilderOptions AddSqlServerFileDataSourceType(this AppHealthCheckBuilderOptions options)
         {
-            options.AddJsonDiscriminator<SqlServerHealthCheckItem>("SqlServer");
+            options.AddFileDataSourceDiscriminator<SqlServerHealthCheckItem>();
             return options; 
         }
     }

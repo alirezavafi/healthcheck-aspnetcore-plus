@@ -4,15 +4,16 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SystemMemoryHealthCheckItem : HealthCheckItem
     {
         public SystemMemoryHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"System", "Infrastructure"};
         }
         
-        public sealed override string Type => "SystemMemory";
+        public const string Type = "SystemMemory";
         public int MaximumMemoryInMegaBytes { get; set; }
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}

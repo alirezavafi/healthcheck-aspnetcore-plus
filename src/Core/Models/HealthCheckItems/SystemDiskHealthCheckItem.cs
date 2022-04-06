@@ -4,15 +4,16 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SystemDiskHealthCheckItem : HealthCheckItem
     {
         public SystemDiskHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"System", "Infrastructure"};
         }
         
-        public sealed override string Type => "SystemDisk";
+        public const string Type = "SystemDisk";
         public string DriveName { get; set; }
         public int MinimumRequiredFreeSpace { get; set; }
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;

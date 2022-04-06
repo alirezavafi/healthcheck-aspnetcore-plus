@@ -24,5 +24,13 @@ namespace HealthCheck.AspNetCore.Plus
         public Action<HealthChecksUIBuilder> CustomizeHealthCheckUi { get; set; }
         public IList<IAppHealthCheckDataSource> DataSources { get; } = new List<IAppHealthCheckDataSource>();
         public string BasePath { get; set; } = "/healthz";
+        public IDictionary<Type, string> FileDataSourceDiscriminators { get; } = new Dictionary<Type, string>();
+        public void AddFileDataSourceDiscriminator<T>()
+        {
+            var attr = (FileDataSourceDiscriminatorAttribute) Attribute.GetCustomAttribute(typeof(T), typeof (FileDataSourceDiscriminatorAttribute));
+            if (attr == null || string.IsNullOrWhiteSpace(attr.Discriminator))
+                throw new ArgumentException("invalid discriminator");
+            this.FileDataSourceDiscriminators.Add(typeof(T), attr.Discriminator);
+        }
     }
 }

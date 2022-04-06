@@ -3,6 +3,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class DnsResolutionHealthCheckItem : HealthCheckItem
     {
         public DnsResolutionHealthCheckItem()
@@ -12,7 +13,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public string Host { get; set;}
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
 
-        public sealed override string Type => "DNS";
+        public const string Type = "DNS";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

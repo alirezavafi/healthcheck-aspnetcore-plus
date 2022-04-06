@@ -4,11 +4,11 @@ using HealthCheck.AspNetCore.Plus.Models.HealthCheckItems;
 
 namespace HealthCheck.AspNetCore.Plus.DataSources
 {
-    public class CustomCodeDataSource : IAppHealthCheckDataSource
+    public class CustomCodeDelegateDataSource : IAppHealthCheckDataSource
     {
-        public CustomCodeHealthCheckItem Settings { get; }
-        public CustomCodeDataSource() { }
-        public CustomCodeDataSource(CustomCodeHealthCheckItem settings)
+        public CustomCodeDelegateHealthCheckItem Settings { get; }
+        public CustomCodeDelegateDataSource() { }
+        public CustomCodeDelegateDataSource(CustomCodeDelegateHealthCheckItem settings)
         {
             Settings = settings;
         }

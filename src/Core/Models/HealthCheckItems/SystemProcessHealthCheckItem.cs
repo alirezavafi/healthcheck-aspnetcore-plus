@@ -5,15 +5,16 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SystemProcessHealthCheckItem : HealthCheckItem
     {
         public SystemProcessHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"System", "Infrastructure", "Service"};
         }
         
-        public sealed override string Type => "SystemProcess";
+        public const string Type = "SystemProcess";
         public string ProcessName { get; set; }
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}

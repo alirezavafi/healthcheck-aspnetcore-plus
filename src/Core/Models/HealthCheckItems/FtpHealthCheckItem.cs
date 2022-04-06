@@ -5,11 +5,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class FtpHealthCheckItem : HealthCheckItem
     {
         public FtpHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Network", "Infrastructure"};
         }
         
@@ -22,7 +23,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public string Username { get; set; }
         public bool CreateFile { get; set; }
         
-        public sealed override string Type => "FTP";
+        public const string Type = "FTP";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

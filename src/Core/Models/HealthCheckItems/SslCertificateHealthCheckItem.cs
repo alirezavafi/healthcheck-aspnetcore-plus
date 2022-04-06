@@ -4,11 +4,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SslCertificateHealthCheckItem : HealthCheckItem
     {
         public SslCertificateHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Network", "Infrastructure", "Web"};
         }
         
@@ -18,7 +19,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public int? RemainDaysToHealthDegraded { get; set; } = 30;
         public TimeSpan? Timeout { get; set;}
 
-        public sealed override string Type => "SSLCertificate";
+        public const string Type = "SSLCertificate";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

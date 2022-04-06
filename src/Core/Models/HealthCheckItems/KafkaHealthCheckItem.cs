@@ -6,11 +6,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class KafkaHealthCheckItem : HealthCheckItem
     {
         public KafkaHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Messaging"};
         }
         public ProducerConfig Configuration { get; set; }
@@ -18,7 +19,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
         
-        public sealed override string Type => "Kafka";
+        public const string Type = "Kafka";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

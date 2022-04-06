@@ -4,9 +4,9 @@ namespace HealthCheck.Plus.Plugins.MySql
 {
     public static class HealthCheckOptionExtensions
     {
-        public static AppHealthCheckBuilderOptions AddOraclePlugin(this AppHealthCheckBuilderOptions options)
+        public static AppHealthCheckBuilderOptions AddOracleFileDataSourceType(this AppHealthCheckBuilderOptions options)
         {
-            options.AddJsonDiscriminator<OracleHealthCheckItem>("Oracle");
+            options.AddFileDataSourceDiscriminator<OracleHealthCheckItem>();
             return options; 
         }
     }

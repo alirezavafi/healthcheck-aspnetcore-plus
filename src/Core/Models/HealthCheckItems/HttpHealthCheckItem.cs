@@ -6,11 +6,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class HttpHealthCheckItem : HealthCheckItem
     {
         public HttpHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Web"};
         }
         
@@ -22,7 +23,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public Uri Uri { get; set; }
         public HttpMethod HttpMethod { get; set; }
         
-        public sealed override string Type => "Url";
+        public const string Type = "Url";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

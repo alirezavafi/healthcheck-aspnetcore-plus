@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using HealthCheck.AspNetCore.Plus.Models.HealthCheckItems;
 using HealthCheck.AspNetCore.Plus.Plugins.MySql;
 using Microsoft.AspNetCore.Builder;
@@ -21,16 +22,21 @@ namespace HealthCheck.AspNetCore.Plus.Samples.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHealthCheckPlus()
-                .AddMySqlPlugin()
+                .AddMySqlFileDataSourceType()
                 .ConfigureHealthCheck((s, o) => o.SetEvaluationTimeInSeconds(1))
                 .ConfigureHealthCheckUi(p => p.AddInMemoryStorage()) ////healthChecks.UiBuilder.AddMySqlStorage("connectionString")
                 .CreateHealthEndpointPerTag()
                 .CreateHealthEndpointPerHealthCheckItem()
                 .CreateUIPerHealthCheckItem()
-                .AddFileDataSource(o => o.SetFileName("healthz.json"))
-                .AddInlineCodeDataSource("Self", context => new HealthCheckResult(HealthStatus.Healthy), groupName: "Api", tags: new[] {"live", "ready", "api"})
-                .AddHealthCheckItemDataSource(new CustomHealthCheckItem())
-                .AddHealthCheckItemDataSource(new PingHealthCheckItem()
+                .AddHealthCheckFileDataSource(o => o.SetFileName("healthz.json"))
+                .AddInlineCodeHealthCheck("Self", (s, c, t) => Task.FromResult(new HealthCheckResult(HealthStatus.Healthy)), groupName: "Api", tags: new[] {"live", "ready", "api"})
+                .AddHealthCheckItem(new SampleCustomCodeHealthCheckItem()
+                {
+                    Name = "Custom",
+                    Group = "Custom",
+                    Tags = new []{ "live", "core"}
+                })
+                .AddHealthCheckItem(new PingHealthCheckItem()
                 {
                     Group = "Availability",
                     Name = "InternetConnectivity",
@@ -48,9 +54,9 @@ namespace HealthCheck.AspNetCore.Plus.Samples.Web
             }
 
             app.UseRouting();
-            app.UseEndpoints(config => { config.MapAppHealthChecksEndpoints(o =>
+            app.UseEndpoints(e => { e.MapAppHealthChecksEndpoints(o =>
             {
-                o.UIPath = "/health/ui";
+                //o.UIPath = "/healthz/ui";
             }); });
         }
     }

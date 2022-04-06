@@ -4,11 +4,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class TcpHealthCheckItem : HealthCheckItem
     {
         public TcpHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Network", "Infrastructure"};
         }
         public string Host { get; set;}
@@ -16,7 +17,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
 
-        public sealed override string Type { get; } = "TCP";
+        public const string Type = "TCP";
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {
             builder.AddTcpHealthCheck(o => o.AddHost(Host, Port), Name, FailureStatus,

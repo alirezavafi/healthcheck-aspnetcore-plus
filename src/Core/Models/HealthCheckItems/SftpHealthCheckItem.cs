@@ -4,11 +4,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SftpHealthCheckItem : HealthCheckItem
     {
         public SftpHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Network", "Infrastructure"};
         }
         
@@ -17,7 +18,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
 
-        public sealed override string Type { get; } = "SFTP";
+        public const string Type = "SFTP";
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {
             //healthChecksBuilder.AddSftpHealthCheck(o => o.AddHost(new SftpConfiguration(new AuthenticationMet)))

@@ -5,11 +5,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
+    [FileDataSourceDiscriminator(Type)]
     public class SmtpHealthCheckItem : HealthCheckItem
     {
         public SmtpHealthCheckItem()
         {
-            this.Name = this.Type;
+            this.Name = Type;
             this.Tags = new[] {"Network", "Infrastructure", "Email"};
         }
         
@@ -22,7 +23,7 @@ namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
         public string Password { get; set; }
         public string Username { get; set; }
         
-        public sealed override string Type { get; } = "SMTP";
+        public const string Type = "SMTP";
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {
             builder.AddSmtpHealthCheck(o =>
