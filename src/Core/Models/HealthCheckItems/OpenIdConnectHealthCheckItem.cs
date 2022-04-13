@@ -5,18 +5,18 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 namespace HealthCheck.AspNetCore.Plus.Models.HealthCheckItems
 {
     [FileDataSourceDiscriminator(Type)]
-    public class IdentityServerHealthCheckItem : HealthCheckItem
+    public class OpenIdConnectHealthCheckItem : HealthCheckItem
     {
-        public IdentityServerHealthCheckItem()
+        public OpenIdConnectHealthCheckItem()
         {
             this.Name = Type;
-            this.Tags = new[] {"WebServer", "IdentityServer"};
+            this.Tags = new[] {"oidc"};
         }
         public Uri Url { get; set;}
         public HealthStatus FailureStatus { get; set; } = HealthStatus.Unhealthy;
         public TimeSpan? Timeout { get; set;}
         
-        public const string Type = "IdentityServer";
+        public const string Type = "OpenIdConnect";
 
         public override void BuildHealthCheck(IHealthChecksBuilder builder)
         {

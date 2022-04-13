@@ -39,11 +39,10 @@ namespace HealthCheck.AspNetCore.Plus
             };
             o.Options.AddFileDataSourceDiscriminator<DnsResolutionHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<FtpHealthCheckItem>();
-            o.Options.AddFileDataSourceDiscriminator<IdentityServerHealthCheckItem>();
+            o.Options.AddFileDataSourceDiscriminator<OpenIdConnectHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<KafkaHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<PingHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<RedisHealthCheckItem>();
-            o.Options.AddFileDataSourceDiscriminator<HangfireHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<SftpHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<SmtpHealthCheckItem>();
             o.Options.AddFileDataSourceDiscriminator<SslCertificateHealthCheckItem>();

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <AssemblyName>HealthCheck.AspNetCore.Plus.Plugins.Hangfire</AssemblyName>
+        <RootNamespace>HealthCheck.AspNetCore.Plus.Plugins.Hangfire</RootNamespace>
+        <PackageVersion>2.0</PackageVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Hangfire.AspNetCore.Plus" Version="1.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Core\Core.csproj" />
+    </ItemGroup>
+</Project>
